@@ -48,7 +48,8 @@ def get_selic():
         else:
             data_para_exibir = data_obj
 
-        data_formatada = data_para_exibir.strftime('%d de %B de %Y')
+        # Formata a data para DD/MM/YYYY
+        data_formatada = data_para_exibir.strftime('%d/%m/%Y')
         
         return selic, data_formatada
     except:
