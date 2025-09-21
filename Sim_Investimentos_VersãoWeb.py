@@ -415,9 +415,9 @@ if aba == "Análise Comparativa (com Taxas de Juros Atuais)":
     if rendimento_pior > 0:
         diferenca_percentual = ((rendimento_melhor / rendimento_pior) - 1) * 100
         analise = (
-            f"Para o seu objetivo de '{objetivo}', o melhor investimento é o **{melhor}**, "
+            f"Para o seu objetivo de '{objetivo}', o melhor investimento é o (a) **{melhor}**, "
             f"com um saldo líquido de {format_brl(melhor_valor)}. "
-            f"Isso representa uma rentabilidade líquida de {diferenca_percentual:.2f}% acima do **{pior}**, "
+            f"Isso representa uma rentabilidade líquida de {diferenca_percentual:.2f}% acima do (a) **{pior}**, "
             f"o investimento de menor rendimento neste cenário."
         )
     else:
@@ -721,4 +721,5 @@ elif aba == "SAC x Tabela Price":
                 'Saldo Devedor (SAC)': df_sac['Saldo Devedor']
             })
             st.line_chart(df_grafico_saldo)
+
 
