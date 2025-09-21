@@ -3,16 +3,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import requests
 from datetime import datetime
-import locale
 import json
 
-# Configura o locale para português do Brasil
-try:
-    locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
-except locale.Error:
-    st.warning("Não foi possível configurar o idioma para Português do Brasil. Alguns formatos podem não aparecer corretamente.")
-    # Fallback para um locale padrão que deve funcionar na maioria dos servidores
-    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+# Define uma função de formatação de moeda para o padrão brasileiro
+def format_brl(val):
+    """
+    Formata um valor numérico para a moeda brasileira (R$).
+    Ex: 1234567.89 -> 'R$ 1.234.567,89'
+    """
+    # Garante que o valor seja float antes de formatar
+    val = float(val)
+    return f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # -------------------------------------------------------------
 # Requisitos da Professora
@@ -392,13 +393,13 @@ if aba == "Análise Comparativa (com Taxas de Juros Atuais)":
         dataframes_para_grafico[nome] = df_detalhado.set_index('Mês')
 
     
-    st.info(f"**Total Investido (Capital Alocado):** R$ {locale.format_string('%.2f', capital_investido, grouping=True)}")
+    st.info(f"**Total Investido (Capital Alocado):** {format_brl(capital_investido)}")
 
     df_comp = pd.DataFrame(resultados).T
     st.subheader("Resultados Comparativos")
     
-    # Formata os valores da tabela com vírgula e 2 casas decimais
-    st.dataframe(df_comp.style.format(lambda val: f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")))
+    # Formata os valores da tabela
+    st.dataframe(df_comp.style.format(format_brl))
     
     # Análise textual
     melhor = df_comp["Saldo Final Líquido (R$)"].idxmax()
@@ -414,14 +415,14 @@ if aba == "Análise Comparativa (com Taxas de Juros Atuais)":
         diferenca_percentual = ((rendimento_melhor / rendimento_pior) - 1) * 100
         analise = (
             f"Para o seu objetivo de '{objetivo}', o melhor investimento é o **{melhor}**, "
-            f"com um saldo líquido de R$ {locale.format_string('%.2f', melhor_valor, grouping=True)}. "
+            f"com um saldo líquido de {format_brl(melhor_valor)}. "
             f"Isso representa uma rentabilidade líquida de {diferenca_percentual:.2f}% acima do **{pior}**, "
             f"o investimento de menor rendimento neste cenário."
         )
     else:
         analise = (
             f"Para o seu objetivo de '{objetivo}', o melhor investimento é o **{melhor}**, "
-            f"com um saldo líquido de R$ {locale.format_string('%.2f', melhor_valor, grouping=True)}. "
+            f"com um saldo líquido de {format_brl(melhor_valor)}. "
             f"O investimento de menor rendimento foi a **{pior}**."
         )
 
@@ -534,13 +535,13 @@ elif aba == "Simulação Manual Detalhada":
         st.subheader("Resumo Financeiro")
         col_res1, col_res2, col_res3, col_res4 = st.columns(4)
         with col_res1:
-            st.metric(label="Total Investido", value=f"R$ {locale.format_string('%.2f', capital_investido, grouping=True)}")
+            st.metric(label="Total Investido", value=format_brl(capital_investido))
         with col_res2:
-            st.metric(label="Saldo Bruto", value=f"R$ {locale.format_string('%.2f', saldo_bruto, grouping=True)}")
+            st.metric(label="Saldo Bruto", value=format_brl(saldo_bruto))
         with col_res3:
-            st.metric(label="Imposto de Renda (IR) Pago", value=f"R$ {locale.format_string('%.2f', ir_pago, grouping=True)}")
+            st.metric(label="Imposto de Renda (IR) Pago", value=format_brl(ir_pago))
         with col_res4:
-            st.metric(label="Saldo Líquido", value=f"R$ {locale.format_string('%.2f', saldo_liquido, grouping=True)}")
+            st.metric(label="Saldo Líquido", value=format_brl(saldo_liquido))
         
         st.markdown("---")
         st.subheader("Relatório de Análise Mensal")
@@ -550,7 +551,7 @@ elif aba == "Simulação Manual Detalhada":
         st.markdown("---")
         st.subheader("Visualização do Crescimento")
         st.line_chart(df_detalhado.set_index('Mês')[['Saldo Bruto (R$)', 'Capital Acumulado (R$)']])
-        st.markdown(f"**Saldo Final Estimado:** R$ {locale.format_string('%.2f', saldo_liquido, grouping=True)}")
+        st.markdown(f"**Saldo Final Estimado:** {format_brl(saldo_liquido)}")
 
 # -----------------------------
 # Aba 3 - Conversor de Períodos
@@ -666,10 +667,6 @@ elif aba == "SAC x Tabela Price":
         df_sac, juros_sac, parcelas_sac = calcular_sac(principal_liquido, taxa_mensal, meses_totais, amortizacao_extra_valor, meses_extra_amort)
         df_price, juros_price, parcelas_price = calcular_price(principal_liquido, taxa_mensal, meses_totais, amortizacao_extra_valor, meses_extra_amort)
         
-        # Função para formatar os valores para a moeda brasileira (R$)
-        def format_brl(val):
-            return f"R$ {locale.format_string('%.2f', val, grouping=True)}"
-
         st.subheader("Resumo dos Custos Totais")
         col_metrics_sac, col_metrics_price = st.columns(2)
         
