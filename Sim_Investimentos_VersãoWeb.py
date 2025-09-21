@@ -7,18 +7,23 @@ import locale
 import json
 
 # Configura o locale para português do Brasil
-locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+try:
+    locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+except locale.Error:
+    st.warning("Não foi possível configurar o idioma para Português do Brasil. Alguns formatos podem não aparecer corretamente.")
+    # Fallback para um locale padrão que deve funcionar na maioria dos servidores
+    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
 # -------------------------------------------------------------
-# Requisitos do Trabalho
+# Requisitos da Professora
 # - Projeto de investimento: 'Compra de imóvel' (exemplo no código)
 # - Simular com/sem aportes (fixos/variáveis)
 # - Diferentes taxas de juros (fixas/variáveis, mensais/anuais)
 # - Períodos em meses e anos (com conversor para dias)
 # - Simulação de Imposto de Renda (incide ou não)
 # - Relatório de análise comparativa
-# - **Extra**: Adicionar Valor de Entrada e Amortizações Extraordinárias
-# - **Extra**: Adicionar total das parcelas pagas no SAC x Tabela Price
+# - **NOVO**: Adicionar Valor de Entrada e Amortizações Extraordinárias
+# - **NOVO**: Adicionar total das parcelas pagas no SAC x Tabela Price
 # -------------------------------------------------------------
 
 # -----------------------------
@@ -718,3 +723,4 @@ elif aba == "SAC x Tabela Price":
                 'Saldo Devedor (SAC)': df_sac['Saldo Devedor']
             })
             st.line_chart(df_grafico_saldo)
+
