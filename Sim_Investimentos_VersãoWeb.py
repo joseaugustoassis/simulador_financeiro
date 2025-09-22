@@ -16,15 +16,15 @@ def format_brl(val):
     return f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # -------------------------------------------------------------
-# Requisitos da Professora
+# Requisitos do trabalho
 # - Projeto de investimento: 'Compra de imóvel' (exemplo no código)
 # - Simular com/sem aportes (fixos/variáveis)
 # - Diferentes taxas de juros (fixas/variáveis, mensais/anuais)
 # - Períodos em meses e anos (com conversor para dias)
 # - Simulação de Imposto de Renda (incide ou não)
 # - Relatório de análise comparativa
-# - **NOVO**: Adicionar Valor de Entrada e Amortizações Extraordinárias
-# - **NOVO**: Adicionar total das parcelas pagas no SAC x Tabela Price
+# - **EXTRA**: Adicionar Valor de Entrada e Amortizações Extraordinárias
+# - **EXTRA**: Adicionar total das parcelas pagas no SAC x Tabela Price
 # -------------------------------------------------------------
 
 # -----------------------------
@@ -318,7 +318,8 @@ if aba == "Análise Comparativa (com Taxas de Juros Atuais)":
         valor_inicial = st.number_input("Valor inicial (R$)", 0.0, step=100.0, key="comp1", help="O valor que você já possui para investir no início.")
         perc_cdb = st.number_input("Porcentagem do CDI para CDB (%)", value=110.0, step=1.0, help="Representa o percentual do CDI que o seu investimento renderá.")
     with col2:
-        anos = st.number_input("Período em anos", 1, step=1, key="comp3", help="O tempo total do seu investimento.")
+        anos = st.number_input("Período em anos", 0, step=1, key="comp_anos", help="O tempo total do seu investimento em anos.")
+        meses_adicionais = st.number_input("Período em meses", 0, step=1, help="Meses adicionais ao período em anos.")
         perc_lci = st.number_input("Porcentagem do CDI para LCI/LCA (%)", value=95.0, step=1.0, help="Representa o percentual do CDI que o seu investimento isento de IR renderá.")
     
     # Aportes variáveis na Aba 1
@@ -358,9 +359,9 @@ if aba == "Análise Comparativa (com Taxas de Juros Atuais)":
                 st.error("Formato inválido para aportes customizados. Use 'mês:valor' separado por vírgula.")
                 aportes_customizados_comp = {}
 
-    meses = anos * 12
+    meses = (anos * 12) + meses_adicionais
 
-    st.markdown(f"**Período total:** **{anos}** anos, **{meses}** meses ou aproximadamente **{meses*30}** dias.")
+    st.markdown(f"**Período total:** **{anos}** anos e **{meses_adicionais}** meses, totalizando **{meses}** meses ou aproximadamente **{meses*30}** dias.")
 
     # Taxas aproximadas com base no CDI e Selic (buscadas da internet)
     taxas = {
@@ -415,9 +416,9 @@ if aba == "Análise Comparativa (com Taxas de Juros Atuais)":
     if rendimento_pior > 0:
         diferenca_percentual = ((rendimento_melhor / rendimento_pior) - 1) * 100
         analise = (
-            f"Para o seu objetivo de '{objetivo}', o melhor investimento é o (a) **{melhor}**, "
+            f"Para o seu objetivo de '{objetivo}', o melhor investimento é o **{melhor}**, "
             f"com um saldo líquido de {format_brl(melhor_valor)}. "
-            f"Isso representa uma rentabilidade líquida de {diferenca_percentual:.2f}% acima do (a) **{pior}**, "
+            f"Isso representa uma rentabilidade líquida de {diferenca_percentual:.2f}% acima do **{pior}**, "
             f"o investimento de menor rendimento neste cenário."
         )
     else:
@@ -497,7 +498,8 @@ elif aba == "Simulação Manual Detalhada":
                 aportes_customizados = {}
         
         with col2:
-            anos = st.number_input("Período em anos", 1, step=1, help="Duração total da sua simulação, em anos.")
+            anos = st.number_input("Período em anos", 0, step=1, help="Duração total da sua simulação, em anos.")
+            meses_adicionais = st.number_input("Período em meses", 0, step=1, help="Meses adicionais para a sua simulação.")
             taxa_juros_tipo = st.radio("Tipo de Taxa de Juros:", ["Fixa", "Variável"], help="Taxa fixa para todo o período ou variável, com alteração mensal.")
             periodo_taxa = st.radio("Periodicidade da Taxa:", ["Anual", "Mensal"], help="Se a taxa informada é anual ou mensal.")
             
@@ -512,9 +514,9 @@ elif aba == "Simulação Manual Detalhada":
         taxa_anual = taxa_input if periodo_taxa == "Anual" else (1 + taxa_input)**12 - 1
 
     # Conversor de tempo
-    meses = anos * 12
+    meses = (anos * 12) + meses_adicionais
     dias = meses * 30  # Aproximação
-    st.markdown(f"**Período total:** **{anos}** anos, **{meses}** meses ou aproximadamente **{dias}** dias.")
+    st.markdown(f"**Período total:** **{anos}** anos e **{meses_adicionais}** meses, totalizando **{meses}** meses ou aproximadamente **{dias}** dias.")
 
     incide_ir = st.checkbox("Simular com Imposto de Renda", help="Marque se o investimento incidir Imposto de Renda. Será aplicada a tabela regressiva.")
     
@@ -721,5 +723,3 @@ elif aba == "SAC x Tabela Price":
                 'Saldo Devedor (SAC)': df_sac['Saldo Devedor']
             })
             st.line_chart(df_grafico_saldo)
-
-
