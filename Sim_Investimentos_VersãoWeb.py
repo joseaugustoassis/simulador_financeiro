@@ -16,7 +16,7 @@ def format_brl(val):
     return f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # -------------------------------------------------------------
-# Requisitos do trabalho
+# Requisitos do Trabalho
 # - Projeto de investimento: 'Compra de imóvel' (exemplo no código)
 # - Simular com/sem aportes (fixos/variáveis)
 # - Diferentes taxas de juros (fixas/variáveis, mensais/anuais)
@@ -320,22 +320,23 @@ if aba == "Análise Comparativa (com Taxas de Juros Atuais)":
         perc_lci = st.number_input("Porcentagem do CDI para LCI/LCA (%)", value=95.0, step=1.0, help="Representa o percentual do CDI que o seu investimento isento de IR renderá.")
     with col2:
         st.subheader("Período de Análise")
-        tab_anos_meses, tab_somente_anos, tab_somente_meses = st.tabs(["Anos e Meses", "Somente Anos", "Somente Meses"])
-
+        
+        opcao_periodo = st.selectbox(
+            "Selecione o tipo de período:",
+            ["Anos e Meses", "Somente Anos", "Somente Meses"],
+            key="comp_select_periodo"
+        )
+        
         anos = 0
         meses_adicionais = 0
         
-        with tab_anos_meses:
+        if opcao_periodo == "Anos e Meses":
             anos = st.number_input("Anos", 0, step=1, key="comp_anos", help="O tempo total do seu investimento em anos.")
             meses_adicionais = st.number_input("Meses", 0, step=1, key="comp_meses_ad", help="Meses adicionais ao período em anos.")
-        
-        with tab_somente_anos:
+        elif opcao_periodo == "Somente Anos":
             anos = st.number_input("Anos", 0, step=1, key="comp_anos_somente", help="O tempo total do seu investimento em anos.")
-            meses_adicionais = 0
-        
-        with tab_somente_meses:
+        elif opcao_periodo == "Somente Meses":
             meses_adicionais = st.number_input("Meses", 0, step=1, key="comp_meses_somente", help="Meses do seu investimento.")
-            anos = 0
     
     # Aportes variáveis na Aba 1
     with st.expander("Configurar Aportes Mensais"):
@@ -517,20 +518,23 @@ elif aba == "Simulação Manual Detalhada":
         
         with col2:
             st.subheader("Período de Simulação")
-            tab_anos_meses, tab_somente_anos, tab_somente_meses = st.tabs(["Anos e Meses", "Somente Anos", "Somente Meses"])
+            
+            opcao_periodo = st.selectbox(
+                "Selecione o tipo de período:",
+                ["Anos e Meses", "Somente Anos", "Somente Meses"],
+                key="sim_select_periodo"
+            )
             
             anos = 0
             meses_adicionais = 0
-
-            with tab_anos_meses:
-                anos = st.number_input("Anos", 0, step=1, help="Duração total da sua simulação, em anos.", key="sim_anos")
-                meses_adicionais = st.number_input("Meses", 0, step=1, help="Meses adicionais para a sua simulação.", key="sim_meses_ad")
-            with tab_somente_anos:
+            
+            if opcao_periodo == "Anos e Meses":
+                anos = st.number_input("Anos", 0, step=1, key="sim_anos", help="Duração total da sua simulação, em anos.")
+                meses_adicionais = st.number_input("Meses", 0, step=1, key="sim_meses_ad", help="Meses adicionais para a sua simulação.")
+            elif opcao_periodo == "Somente Anos":
                 anos = st.number_input("Anos", 0, step=1, key="somente_anos_sim", help="Duração total da sua simulação em anos.")
-                meses_adicionais = 0
-            with tab_somente_meses:
+            elif opcao_periodo == "Somente Meses":
                 meses_adicionais = st.number_input("Meses", 0, step=1, key="somente_meses_sim", help="Duração total da sua simulação em meses.")
-                anos = 0
             
             taxa_juros_tipo = st.radio("Tipo de Taxa de Juros:", ["Fixa", "Variável"], help="Taxa fixa para todo o período ou variável, com alteração mensal.")
             periodo_taxa = st.radio("Periodicidade da Taxa:", ["Anual", "Mensal"], help="Se a taxa informada é anual ou mensal.")
