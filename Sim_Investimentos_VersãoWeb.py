@@ -1,4 +1,4 @@
-import streamlit as stimport streamlit as st
+import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import requests
@@ -16,15 +16,15 @@ def format_brl(val):
     return f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # -------------------------------------------------------------
-# Requisitos da Professora
+# Requisitos do Trabalho
 # - Projeto de investimento: 'Compra de imóvel' (exemplo no código)
 # - Simular com/sem aportes (fixos/variáveis)
 # - Diferentes taxas de juros (fixas/variáveis, mensais/anuais)
 # - Períodos em meses e anos (com conversor para dias)
 # - Simulação de Imposto de Renda (incide ou não)
 # - Relatório de análise comparativa
-# - **NOVO**: Adicionar Valor de Entrada e Amortizações Extraordinárias
-# - **NOVO**: Adicionar total das parcelas pagas no SAC x Tabela Price
+# - **EXTRA**: Adicionar Valor de Entrada e Amortizações Extraordinárias
+# - **EXTRA**: Adicionar total das parcelas pagas no SAC x Tabela Price
 # -------------------------------------------------------------
 
 # -----------------------------
@@ -480,19 +480,20 @@ elif aba == "Simulação Manual Detalhada":
             tipo_aporte = st.selectbox(
                 "Tipo de Aporte Mensal:",
                 ["Fixo", "Variação Linear", "Variação Percentual", "Aportes Customizados"],
+                key="tipo_aporte_sim",
                 help="Escolha se seus aportes serão fixos ou se variarão a cada mês."
             )
             
             if tipo_aporte == "Variação Linear":
-                aporte_mensal = st.number_input("Aporte inicial (R$)", 0.0, step=100.0, help="Valor do primeiro aporte.")
-                variacao_aporte = st.number_input("Variação do aporte mensal (R$)", 0.0, step=10.0, help="Valor que será adicionado ao aporte a cada mês (ex: 10,00).")
+                aporte_mensal = st.number_input("Aporte inicial (R$)", 0.0, step=100.0, key="sim_var_ini", help="Valor do primeiro aporte.")
+                variacao_aporte = st.number_input("Variação do aporte mensal (R$)", 0.0, step=10.0, key="sim_var", help="Valor que será adicionado ao aporte a cada mês (ex: 10,00).")
                 aportes_customizados = {}
             elif tipo_aporte == "Variação Percentual":
-                aporte_mensal = st.number_input("Aporte inicial (R$)", 0.0, step=100.0, help="Valor do primeiro aporte.")
-                variacao_aporte = st.number_input("Variação anual do aporte (%)", 0.0, step=0.1, help="Percentual de aumento anual do aporte.") / 100
+                aporte_mensal = st.number_input("Aporte inicial (R$)", 0.0, step=100.0, key="sim_perc_ini", help="Valor do primeiro aporte.")
+                variacao_aporte = st.number_input("Variação anual do aporte (%)", 0.0, step=0.1, key="sim_perc_var", help="Percentual de aumento anual do aporte.") / 100
                 aportes_customizados = {}
             elif tipo_aporte == "Aportes Customizados":
-                aporte_mensal = st.number_input("Aporte Mensal (R$)", 0.0, step=100.0, help="O valor do aporte fixo que será somado aos aportes customizados.")
+                aporte_mensal = st.number_input("Aporte Mensal (R$)", 0.0, step=100.0, key="sim_custom_base", help="O valor do aporte fixo que será somado aos aportes customizados.")
                 variacao_aporte = 0.0
                 aportes_customizados_str = st.text_area(
                     "Aportes adicionais (mês:valor)", 
@@ -512,7 +513,7 @@ elif aba == "Simulação Manual Detalhada":
                     st.error("Formato inválido para aportes customizados. Use 'mês:valor' separado por vírgula.")
                     aportes_customizados = {}
             else:
-                aporte_mensal = st.number_input("Aporte mensal (R$)", 0.0, step=100.0, help="O valor fixo que você adicionará ao investimento todo mês.")
+                aporte_mensal = st.number_input("Aporte mensal (R$)", 0.0, step=100.0, key="sim_fixo", help="O valor fixo que você adicionará ao investimento todo mês.")
                 variacao_aporte = 0.0
                 aportes_customizados = {}
         
@@ -540,11 +541,11 @@ elif aba == "Simulação Manual Detalhada":
             periodo_taxa = st.radio("Periodicidade da Taxa:", ["Anual", "Mensal"], help="Se a taxa informada é anual ou mensal.")
             
             if taxa_juros_tipo == "Fixa":
-                taxa_input = st.number_input(f"Taxa de juros (% {periodo_taxa.lower()})", 0.1, step=0.1, help="Taxa de juros fixa para o período.") / 100
+                taxa_input = st.number_input(f"Taxa de juros (% {periodo_taxa.lower()})", 0.1, step=0.1, key="sim_taxa_fixa", help="Taxa de juros fixa para o período.") / 100
                 variacao_taxa = 0.0
             else:
-                taxa_input = st.number_input(f"Taxa inicial (% {periodo_taxa.lower()})", 0.1, step=0.1, help="Taxa de juros inicial da simulação.") / 100
-                variacao_taxa = st.number_input("Variação da taxa mensal (% do valor anterior)", 0.0, step=0.01, help="Percentual de variação da taxa a cada mês.") / 100
+                taxa_input = st.number_input(f"Taxa inicial (% {periodo_taxa.lower()})", 0.1, step=0.1, key="sim_taxa_var", help="Taxa de juros inicial da simulação.") / 100
+                variacao_taxa = st.number_input("Variação da taxa mensal (% do valor anterior)", 0.0, step=0.01, key="sim_var_taxa", help="Percentual de variação da taxa a cada mês.") / 100
         
         # Conversão da taxa anual para mensal
         taxa_anual = taxa_input if periodo_taxa == "Anual" else (1 + taxa_input)**12 - 1
@@ -554,9 +555,9 @@ elif aba == "Simulação Manual Detalhada":
     dias = meses * 30  # Aproximação
     st.markdown(f"**Período total:** **{anos}** anos e **{meses_adicionais}** meses, totalizando **{meses}** meses ou aproximadamente **{dias}** dias.")
 
-    incide_ir = st.checkbox("Simular com Imposto de Renda", help="Marque se o investimento incidir Imposto de Renda. Será aplicada a tabela regressiva.")
+    incide_ir = st.checkbox("Simular com Imposto de Renda", key="sim_ir", help="Marque se o investimento incidir Imposto de Renda. Será aplicada a tabela regressiva.")
     
-    if st.button("Simular Investimento"):
+    if st.button("Simular Investimento", key="simular_btn"):
         if meses > 0:
             saldo_bruto, ir_pago, saldo_liquido, df_detalhado, capital_investido = simular_investimento_detalhado(
                 valor_inicial,
@@ -606,11 +607,11 @@ elif aba == "Conversor de Períodos":
     col_periodo1, col_periodo2, col_periodo3 = st.columns(3)
     
     with col_periodo1:
-        anos_input = st.number_input("Anos", value=0, min_value=0, help="Insira o número de anos.")
+        anos_input = st.number_input("Anos", value=0, min_value=0, help="Insira o número de anos.", key="conv_anos")
     with col_periodo2:
-        meses_input = st.number_input("Meses", value=0, min_value=0, help="Insira o número de meses.")
+        meses_input = st.number_input("Meses", value=0, min_value=0, help="Insira o número de meses.", key="conv_meses")
     with col_periodo3:
-        dias_input = st.number_input("Dias", value=0, min_value=0, help="Insira o número de dias.")
+        dias_input = st.number_input("Dias", value=0, min_value=0, help="Insira o número de dias.", key="conv_dias")
 
     # Lógica de conversão
     anos_result = 0.0
@@ -646,7 +647,7 @@ elif aba == "Conversor de Taxas de Juros":
 
     with col_taxa1:
         st.subheader("Anual para Mensal")
-        taxa_anual_input = st.number_input("Taxa Anual (%)", min_value=0.0, step=0.1, help="Insira a taxa anual que deseja converter para mensal.")
+        taxa_anual_input = st.number_input("Taxa Anual (%)", min_value=0.0, step=0.1, key="anual_para_mensal", help="Insira a taxa anual que deseja converter para mensal.")
         if taxa_anual_input > 0:
             taxa_anual_decimal = taxa_anual_input / 100
             taxa_mensal_convertida = (1 + taxa_anual_decimal)**(1/12) - 1
@@ -654,7 +655,7 @@ elif aba == "Conversor de Taxas de Juros":
 
     with col_taxa2:
         st.subheader("Mensal para Anual")
-        taxa_mensal_input = st.number_input("Taxa Mensal (%)", min_value=0.0, step=0.1, help="Insira a taxa mensal que deseja converter para anual.")
+        taxa_mensal_input = st.number_input("Taxa Mensal (%)", min_value=0.0, step=0.1, key="mensal_para_anual", help="Insira a taxa mensal que deseja converter para anual.")
         if taxa_mensal_input > 0:
             taxa_mensal_decimal = taxa_mensal_input / 100
             taxa_anual_convertida = (1 + taxa_mensal_decimal)**12 - 1
@@ -676,9 +677,9 @@ elif aba == "SAC x Tabela Price":
         
         col_price3, col_price4 = st.columns(2)
         with col_price3:
-            taxa_anual = st.number_input("Taxa de Juros Anual (%)", min_value=0.1, step=0.1, help="Taxa anual do seu financiamento.") / 100
+            taxa_anual = st.number_input("Taxa de Juros Anual (%)", min_value=0.1, step=0.1, key="price_taxa", help="Taxa anual do seu financiamento.") / 100
         with col_price4:
-            meses_totais = st.number_input("Período (meses)", min_value=12, step=12, help="Duração total do seu financiamento em meses.")
+            meses_totais = st.number_input("Período (meses)", min_value=12, step=12, key="price_meses", help="Duração total do seu financiamento em meses.")
         
     st.markdown("---")
     
@@ -686,9 +687,9 @@ elif aba == "SAC x Tabela Price":
         st.info("Use este campo para simular pagamentos extras que abatem o saldo devedor.")
         col_amort1, col_amort2 = st.columns(2)
         with col_amort1:
-            amortizacao_extra_valor = st.number_input("Valor da Amortização Extraordinária (R$)", min_value=0.0, step=100.0, help="Valor que você deseja pagar extra.")
+            amortizacao_extra_valor = st.number_input("Valor da Amortização Extraordinária (R$)", min_value=0.0, step=100.0, key="amort_valor", help="Valor que você deseja pagar extra.")
         with col_amort2:
-            amortizacao_extra_meses_str = st.text_input("Meses para as amortizações (ex: 12, 24, 36)", "", help="Liste os meses em que o valor acima será pago, separados por vírgula.")
+            amortizacao_extra_meses_str = st.text_input("Meses para as amortizações (ex: 12, 24, 36)", "", key="amort_meses", help="Liste os meses em que o valor acima será pago, separados por vírgula.")
     
     # Processa os meses de amortização
     meses_extra_amort = []
@@ -704,7 +705,7 @@ elif aba == "SAC x Tabela Price":
     
     principal_liquido = principal_total - entrada
 
-    if st.button("Simular Amortização"):
+    if st.button("Simular Amortização", key="simular_amortizacao_btn"):
         
         df_sac, juros_sac, parcelas_sac = calcular_sac(principal_liquido, taxa_mensal, meses_totais, amortizacao_extra_valor, meses_extra_amort)
         df_price, juros_price, parcelas_price = calcular_price(principal_liquido, taxa_mensal, meses_totais, amortizacao_extra_valor, meses_extra_amort)
@@ -762,5 +763,4 @@ elif aba == "SAC x Tabela Price":
                 'Saldo Devedor (SAC)': df_sac['Saldo Devedor']
             })
             st.line_chart(df_grafico_saldo)
-
 
