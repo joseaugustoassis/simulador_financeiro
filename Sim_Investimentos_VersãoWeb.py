@@ -317,6 +317,7 @@ if aba == "Análise Comparativa (com Taxas de Juros Atuais)":
     with col1:
         valor_inicial = st.number_input("Valor inicial (R$)", 0.0, step=100.0, key="comp1", help="O valor que você já possui para investir no início.")
         perc_cdb = st.number_input("Porcentagem do CDI para CDB (%)", value=110.0, step=1.0, help="Representa o percentual do CDI que o seu investimento renderá.")
+        perc_lci = st.number_input("Porcentagem do CDI para LCI/LCA (%)", value=95.0, step=1.0, help="Representa o percentual do CDI que o seu investimento isento de IR renderá.")
     with col2:
         tipo_periodo_comp = st.radio("Período de Análise:", ["Anos e Meses", "Somente Anos", "Somente Meses"], key="tipo_periodo_comp")
 
@@ -331,7 +332,6 @@ if aba == "Análise Comparativa (com Taxas de Juros Atuais)":
         else: # Somente Meses
             meses_adicionais = st.number_input("Meses", 0, step=1, key="comp_meses_somente", help="Meses do seu investimento.")
         
-        perc_lci = st.number_input("Porcentagem do CDI para LCI/LCA (%)", value=95.0, step=1.0, help="Representa o percentual do CDI que o seu investimento isento de IR renderá.")
     
     # Aportes variáveis na Aba 1
     with st.expander("Configurar Aportes Mensais"):
@@ -751,3 +751,4 @@ elif aba == "SAC x Tabela Price":
                 'Saldo Devedor (SAC)': df_sac['Saldo Devedor']
             })
             st.line_chart(df_grafico_saldo)
+
