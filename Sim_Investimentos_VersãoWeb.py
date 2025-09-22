@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 import requests
 from datetime import datetime
 import json
-from fpdf import FPDF
-import io
 
 # Define uma função de formatação de moeda para o padrão brasileiro
 def format_brl(val):
@@ -27,7 +25,6 @@ def format_brl(val):
 # - Relatório de análise comparativa
 # - **EXTRA**: Adicionar Valor de Entrada e Amortizações Extraordinárias
 # - **EXTRA**: Adicionar total das parcelas pagas no SAC x Tabela Price
-# - **EXTRA**: Adicionar relatório em PDF
 # -------------------------------------------------------------
 
 # -----------------------------
@@ -275,53 +272,6 @@ def calcular_price(principal, taxa_mensal, meses, amort_extra_valor, meses_extra
         })
 
     return pd.DataFrame(tabela), juros_total, parcela_total
-
-def create_pdf_report(data_to_report, df_detalhado, chart_buffer, title):
-    """Gera um relatório PDF com os dados da simulação."""
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, title, 0, 1, 'C')
-    pdf.set_font("Arial", '', 12)
-    pdf.ln(10)
-
-    # Adiciona os dados de resumo
-    for key, value in data_to_report.items():
-        pdf.cell(0, 10, f"{key}: {value}", 0, 1)
-    
-    pdf.ln(10)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "Relatório de Análise Mensal", 0, 1)
-    
-    # Adiciona a tabela com os dados detalhados
-    pdf.set_font("Arial", '', 10)
-    # Títulos da tabela
-    headers = ["Mês", "Aporte", "Juros (R$)", "Saldo Bruto (R$)", "Capital Acumulado (R$)"]
-    col_widths = [15, 30, 30, 40, 40]
-    
-    # Adiciona cabeçalhos
-    for i, header in enumerate(headers):
-        pdf.cell(col_widths[i], 10, header, 1, 0, 'C')
-    pdf.ln()
-
-    # Adiciona os dados
-    for index, row in df_detalhado.iterrows():
-        pdf.cell(col_widths[0], 10, str(row['Mês']), 1, 0)
-        pdf.cell(col_widths[1], 10, f"{row['Aporte']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), 1, 0)
-        pdf.cell(col_widths[2], 10, f"{row['Juros (R$)']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), 1, 0)
-        pdf.cell(col_widths[3], 10, f"{row['Saldo Bruto (R$)']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), 1, 0)
-        pdf.cell(col_widths[4], 10, f"{row['Capital Acumulado (R$)']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), 1, 1)
-    
-    pdf.ln(10)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "Visualização do Crescimento", 0, 1)
-    pdf.ln(5)
-
-    # Adiciona o gráfico salvo
-    pdf.image(chart_buffer, x=20, w=170)
-    
-    pdf_output = pdf.output(dest='S').encode('latin1')
-    return io.BytesIO(pdf_output)
 
 # -----------------------------
 # Configuração Streamlit
@@ -642,7 +592,6 @@ elif aba == "Simulação Manual Detalhada":
             st.markdown("---")
             st.subheader("Visualização do Crescimento")
 
-            # Cria o gráfico para o PDF
             fig, ax = plt.subplots(figsize=(10, 6))
             ax.plot(df_detalhado['Mês'], df_detalhado['Saldo Bruto (R$)'], label='Saldo Bruto')
             ax.plot(df_detalhado['Mês'], df_detalhado['Capital Acumulado (R$)'], label='Capital Acumulado')
@@ -651,27 +600,7 @@ elif aba == "Simulação Manual Detalhada":
             ax.set_ylabel('Valor (R$)')
             ax.grid(True)
             ax.legend()
-            
-            # Salva o gráfico em um buffer de bytes para o PDF
-            buf = io.BytesIO()
-            fig.savefig(buf, format="png")
-            buf.seek(0)
             st.pyplot(fig)
-
-            data_for_pdf = {
-                "Projeto": projeto_pessoal,
-                "Valor Inicial": format_brl(valor_inicial),
-                "Total Investido": format_brl(capital_investido),
-                "Saldo Final Líquido": format_brl(saldo_liquido),
-                "Período (meses)": meses
-            }
-            pdf_buffer = create_pdf_report(data_for_pdf, df_detalhado, buf, "Relatório de Simulação de Investimento")
-            st.download_button(
-                label="Gerar Relatório em PDF",
-                data=pdf_buffer,
-                file_name=f"relatorio_simulacao_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                mime="application/pdf"
-            )
 
         else:
             st.error("O período de simulação deve ser maior que 0. Por favor, insira anos ou meses para continuar.")
