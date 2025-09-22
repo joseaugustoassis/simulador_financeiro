@@ -3,5 +3,3 @@ pandas
 requests
 matplotlib
 json
-FPDF
-io
