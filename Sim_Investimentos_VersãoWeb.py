@@ -318,8 +318,19 @@ if aba == "Análise Comparativa (com Taxas de Juros Atuais)":
         valor_inicial = st.number_input("Valor inicial (R$)", 0.0, step=100.0, key="comp1", help="O valor que você já possui para investir no início.")
         perc_cdb = st.number_input("Porcentagem do CDI para CDB (%)", value=110.0, step=1.0, help="Representa o percentual do CDI que o seu investimento renderá.")
     with col2:
-        anos = st.number_input("Período em anos", 0, step=1, key="comp_anos", help="O tempo total do seu investimento em anos.")
-        meses_adicionais = st.number_input("Período em meses", 0, step=1, help="Meses adicionais ao período em anos.")
+        tipo_periodo_comp = st.radio("Período de Análise:", ["Anos e Meses", "Somente Anos", "Somente Meses"], key="tipo_periodo_comp")
+
+        anos = 0
+        meses_adicionais = 0
+        
+        if tipo_periodo_comp == "Anos e Meses":
+            anos = st.number_input("Anos", 0, step=1, key="comp_anos", help="O tempo total do seu investimento em anos.")
+            meses_adicionais = st.number_input("Meses", 0, step=1, key="comp_meses_ad", help="Meses adicionais ao período em anos.")
+        elif tipo_periodo_comp == "Somente Anos":
+            anos = st.number_input("Anos", 0, step=1, key="comp_anos_somente", help="O tempo total do seu investimento em anos.")
+        else: # Somente Meses
+            meses_adicionais = st.number_input("Meses", 0, step=1, key="comp_meses_somente", help="Meses do seu investimento.")
+        
         perc_lci = st.number_input("Porcentagem do CDI para LCI/LCA (%)", value=95.0, step=1.0, help="Representa o percentual do CDI que o seu investimento isento de IR renderá.")
     
     # Aportes variáveis na Aba 1
@@ -361,86 +372,89 @@ if aba == "Análise Comparativa (com Taxas de Juros Atuais)":
 
     meses = (anos * 12) + meses_adicionais
 
-    st.markdown(f"**Período total:** **{anos}** anos e **{meses_adicionais}** meses, totalizando **{meses}** meses ou aproximadamente **{meses*30}** dias.")
+    if meses > 0:
+        st.markdown(f"**Período total:** **{anos}** anos e **{meses_adicionais}** meses, totalizando **{meses}** meses ou aproximadamente **{meses*30}** dias.")
 
-    # Taxas aproximadas com base no CDI e Selic (buscadas da internet)
-    taxas = {
-        "Poupança": poupanca_taxa,
-        f"CDB ({perc_cdb:.0f}% CDI)": (cdi * perc_cdb / 100),
-        f"LCI/LCA ({perc_lci:.0f}% CDI)": (cdi * perc_lci / 100),
-        "Tesouro Selic": selic,
-    }
-
-    resultados = {}
-    dataframes_para_grafico = {}
-    for nome, taxa_anual in taxas.items():
-        incide_ir = nome.startswith("CDB") or nome.startswith("Tesouro")
-        # Usa a nova função de simulação para a precisão do IR e capital investido
-        saldo_bruto, ir_pago, saldo_liquido, df_detalhado, capital_investido = simular_investimento_detalhado(
-            valor_inicial,
-            tipo_aporte_comp,
-            aporte_comp,
-            variacao_aporte_comp,
-            aportes_customizados_comp,
-            taxa_anual,
-            0, # Taxa fixa para comparação
-            meses,
-            incide_ir
-        )
-        resultados[nome] = {
-            "Saldo Final Bruto (R$)": saldo_bruto,
-            "IR Pago (R$)": ir_pago,
-            "Saldo Final Líquido (R$)": saldo_liquido
+        # Taxas aproximadas com base no CDI e Selic (buscadas da internet)
+        taxas = {
+            "Poupança": poupanca_taxa,
+            f"CDB ({perc_cdb:.0f}% CDI)": (cdi * perc_cdb / 100),
+            f"LCI/LCA ({perc_lci:.0f}% CDI)": (cdi * perc_lci / 100),
+            "Tesouro Selic": selic,
         }
-        dataframes_para_grafico[nome] = df_detalhado.set_index('Mês')
 
-    
-    st.info(f"**Total Investido (Capital Alocado):** {format_brl(capital_investido)}")
+        resultados = {}
+        dataframes_para_grafico = {}
+        for nome, taxa_anual in taxas.items():
+            incide_ir = nome.startswith("CDB") or nome.startswith("Tesouro")
+            # Usa a nova função de simulação para a precisão do IR e capital investido
+            saldo_bruto, ir_pago, saldo_liquido, df_detalhado, capital_investido = simular_investimento_detalhado(
+                valor_inicial,
+                tipo_aporte_comp,
+                aporte_comp,
+                variacao_aporte_comp,
+                aportes_customizados_comp,
+                taxa_anual,
+                0, # Taxa fixa para comparação
+                meses,
+                incide_ir
+            )
+            resultados[nome] = {
+                "Saldo Final Bruto (R$)": saldo_bruto,
+                "IR Pago (R$)": ir_pago,
+                "Saldo Final Líquido (R$)": saldo_liquido
+            }
+            dataframes_para_grafico[nome] = df_detalhado.set_index('Mês')
 
-    df_comp = pd.DataFrame(resultados).T
-    st.subheader("Resultados Comparativos")
-    
-    # Formata os valores da tabela
-    st.dataframe(df_comp.style.format(format_brl))
-    
-    # Análise textual
-    melhor = df_comp["Saldo Final Líquido (R$)"].idxmax()
-    melhor_valor = df_comp.loc[melhor, "Saldo Final Líquido (R$)"]
-    
-    pior = df_comp["Saldo Final Líquido (R$)"].idxmin()
-    pior_valor = df_comp.loc[pior, "Saldo Final Líquido (R$)"]
-    
-    rendimento_melhor = melhor_valor - capital_investido
-    rendimento_pior = pior_valor - capital_investido
+        
+        st.info(f"**Total Investido (Capital Alocado):** {format_brl(capital_investido)}")
 
-    if rendimento_pior > 0:
-        diferenca_percentual = ((rendimento_melhor / rendimento_pior) - 1) * 100
-        analise = (
-            f"Para o seu objetivo de '{objetivo}', o melhor investimento é o **{melhor}**, "
-            f"com um saldo líquido de {format_brl(melhor_valor)}. "
-            f"Isso representa uma rentabilidade líquida de {diferenca_percentual:.2f}% acima do **{pior}**, "
-            f"o investimento de menor rendimento neste cenário."
-        )
+        df_comp = pd.DataFrame(resultados).T
+        st.subheader("Resultados Comparativos")
+        
+        # Formata os valores da tabela
+        st.dataframe(df_comp.style.format(format_brl))
+        
+        # Análise textual
+        melhor = df_comp["Saldo Final Líquido (R$)"].idxmax()
+        melhor_valor = df_comp.loc[melhor, "Saldo Final Líquido (R$)"]
+        
+        pior = df_comp["Saldo Final Líquido (R$)"].idxmin()
+        pior_valor = df_comp.loc[pior, "Saldo Final Líquido (R$)"]
+        
+        rendimento_melhor = melhor_valor - capital_investido
+        rendimento_pior = pior_valor - capital_investido
+
+        if rendimento_pior > 0:
+            diferenca_percentual = ((rendimento_melhor / rendimento_pior) - 1) * 100
+            analise = (
+                f"Para o seu objetivo de '{objetivo}', o melhor investimento é o **{melhor}**, "
+                f"com um saldo líquido de {format_brl(melhor_valor)}. "
+                f"Isso representa uma rentabilidade líquida de {diferenca_percentual:.2f}% acima do **{pior}**, "
+                f"o investimento de menor rendimento neste cenário."
+            )
+        else:
+            analise = (
+                f"Para o seu objetivo de '{objetivo}', o melhor investimento é o **{melhor}**, "
+                f"com um saldo líquido de {format_brl(melhor_valor)}. "
+                f"O investimento de menor rendimento foi a **{pior}**."
+            )
+
+        st.success(analise)
+        
+        st.markdown("---")
+        st.subheader("Análise Gráfica")
+        
+        # Cria um DataFrame para o gráfico de linhas com os saldos de cada investimento
+        df_grafico_linhas = pd.DataFrame({
+            nome: df['Saldo Bruto (R$)'] for nome, df in dataframes_para_grafico.items()
+        })
+
+        st.line_chart(df_grafico_linhas)
+        st.bar_chart(df_comp['Saldo Final Líquido (R$)'])
+        st.markdown("---")
     else:
-        analise = (
-            f"Para o seu objetivo de '{objetivo}', o melhor investimento é o **{melhor}**, "
-            f"com um saldo líquido de {format_brl(melhor_valor)}. "
-            f"O investimento de menor rendimento foi a **{pior}**."
-        )
-
-    st.success(analise)
-    
-    st.markdown("---")
-    st.subheader("Análise Gráfica")
-    
-    # Cria um DataFrame para o gráfico de linhas com os saldos de cada investimento
-    df_grafico_linhas = pd.DataFrame({
-        nome: df['Saldo Bruto (R$)'] for nome, df in dataframes_para_grafico.items()
-    })
-
-    st.line_chart(df_grafico_linhas)
-    st.bar_chart(df_comp['Saldo Final Líquido (R$)'])
-    st.markdown("---")
+        st.error("O período de simulação deve ser maior que 0. Por favor, insira anos ou meses para continuar.")
 
 # -----------------------------
 # Aba 2 - Simulação Manual Detalhada
@@ -498,8 +512,19 @@ elif aba == "Simulação Manual Detalhada":
                 aportes_customizados = {}
         
         with col2:
-            anos = st.number_input("Período em anos", 0, step=1, help="Duração total da sua simulação, em anos.")
-            meses_adicionais = st.number_input("Período em meses", 0, step=1, help="Meses adicionais para a sua simulação.")
+            tipo_periodo = st.radio("Período de Simulação:", ["Anos e Meses", "Somente Anos", "Somente Meses"], key="tipo_periodo_sim")
+            
+            anos = 0
+            meses_adicionais = 0
+
+            if tipo_periodo == "Anos e Meses":
+                anos = st.number_input("Anos", 0, step=1, help="Duração total da sua simulação, em anos.")
+                meses_adicionais = st.number_input("Meses", 0, step=1, help="Meses adicionais para a sua simulação.")
+            elif tipo_periodo == "Somente Anos":
+                anos = st.number_input("Anos", 0, step=1, key="somente_anos", help="Duração total da sua simulação em anos.")
+            else: # Somente Meses
+                meses_adicionais = st.number_input("Meses", 0, step=1, key="somente_meses", help="Duração total da sua simulação em meses.")
+                
             taxa_juros_tipo = st.radio("Tipo de Taxa de Juros:", ["Fixa", "Variável"], help="Taxa fixa para todo o período ou variável, com alteração mensal.")
             periodo_taxa = st.radio("Periodicidade da Taxa:", ["Anual", "Mensal"], help="Se a taxa informada é anual ou mensal.")
             
@@ -521,40 +546,43 @@ elif aba == "Simulação Manual Detalhada":
     incide_ir = st.checkbox("Simular com Imposto de Renda", help="Marque se o investimento incidir Imposto de Renda. Será aplicada a tabela regressiva.")
     
     if st.button("Simular Investimento"):
-        saldo_bruto, ir_pago, saldo_liquido, df_detalhado, capital_investido = simular_investimento_detalhado(
-            valor_inicial,
-            tipo_aporte,
-            aporte_mensal,
-            variacao_aporte,
-            aportes_customizados,
-            taxa_anual,
-            variacao_taxa,
-            meses,
-            incide_ir
-        )
-    
-        # Exibição dos resultados
-        st.success("✅ **Simulação concluída!**")
-        st.subheader("Resumo Financeiro")
-        col_res1, col_res2, col_res3, col_res4 = st.columns(4)
-        with col_res1:
-            st.metric(label="Total Investido", value=format_brl(capital_investido))
-        with col_res2:
-            st.metric(label="Saldo Bruto", value=format_brl(saldo_bruto))
-        with col_res3:
-            st.metric(label="Imposto de Renda (IR) Pago", value=format_brl(ir_pago))
-        with col_res4:
-            st.metric(label="Saldo Líquido", value=format_brl(saldo_liquido))
+        if meses > 0:
+            saldo_bruto, ir_pago, saldo_liquido, df_detalhado, capital_investido = simular_investimento_detalhado(
+                valor_inicial,
+                tipo_aporte,
+                aporte_mensal,
+                variacao_aporte,
+                aportes_customizados,
+                taxa_anual,
+                variacao_taxa,
+                meses,
+                incide_ir
+            )
         
-        st.markdown("---")
-        st.subheader("Relatório de Análise Mensal")
-        st.markdown("A tabela abaixo mostra o crescimento do seu investimento mês a mês.")
-        st.dataframe(df_detalhado)
-        
-        st.markdown("---")
-        st.subheader("Visualização do Crescimento")
-        st.line_chart(df_detalhado.set_index('Mês')[['Saldo Bruto (R$)', 'Capital Acumulado (R$)']])
-        st.markdown(f"**Saldo Final Estimado:** {format_brl(saldo_liquido)}")
+            # Exibição dos resultados
+            st.success("✅ **Simulação concluída!**")
+            st.subheader("Resumo Financeiro")
+            col_res1, col_res2, col_res3, col_res4 = st.columns(4)
+            with col_res1:
+                st.metric(label="Total Investido", value=format_brl(capital_investido))
+            with col_res2:
+                st.metric(label="Saldo Bruto", value=format_brl(saldo_bruto))
+            with col_res3:
+                st.metric(label="Imposto de Renda (IR) Pago", value=format_brl(ir_pago))
+            with col_res4:
+                st.metric(label="Saldo Líquido", value=format_brl(saldo_liquido))
+            
+            st.markdown("---")
+            st.subheader("Relatório de Análise Mensal")
+            st.markdown("A tabela abaixo mostra o crescimento do seu investimento mês a mês.")
+            st.dataframe(df_detalhado)
+            
+            st.markdown("---")
+            st.subheader("Visualização do Crescimento")
+            st.line_chart(df_detalhado.set_index('Mês')[['Saldo Bruto (R$)', 'Capital Acumulado (R$)']])
+            st.markdown(f"**Saldo Final Estimado:** {format_brl(saldo_liquido)}")
+        else:
+            st.error("O período de simulação deve ser maior que 0. Por favor, insira anos ou meses para continuar.")
 
 # -----------------------------
 # Aba 3 - Conversor de Períodos
