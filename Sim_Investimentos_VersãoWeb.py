@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as stimport streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import requests
@@ -16,15 +16,15 @@ def format_brl(val):
     return f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # -------------------------------------------------------------
-# Requisitos do Trabalho
+# Requisitos da Professora
 # - Projeto de investimento: 'Compra de imóvel' (exemplo no código)
 # - Simular com/sem aportes (fixos/variáveis)
 # - Diferentes taxas de juros (fixas/variáveis, mensais/anuais)
 # - Períodos em meses e anos (com conversor para dias)
 # - Simulação de Imposto de Renda (incide ou não)
 # - Relatório de análise comparativa
-# - **EXTRA**: Adicionar Valor de Entrada e Amortizações Extraordinárias
-# - **EXTRA**: Adicionar total das parcelas pagas no SAC x Tabela Price
+# - **NOVO**: Adicionar Valor de Entrada e Amortizações Extraordinárias
+# - **NOVO**: Adicionar total das parcelas pagas no SAC x Tabela Price
 # -------------------------------------------------------------
 
 # -----------------------------
@@ -762,3 +762,5 @@ elif aba == "SAC x Tabela Price":
                 'Saldo Devedor (SAC)': df_sac['Saldo Devedor']
             })
             st.line_chart(df_grafico_saldo)
+
+
