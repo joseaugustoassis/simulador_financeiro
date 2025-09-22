@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 import requests
 from datetime import datetime
 import json
@@ -11,20 +12,23 @@ def format_brl(val):
     Formata um valor numérico para a moeda brasileira (R$).
     Ex: 1234567.89 -> 'R$ 1.234.567,89'
     """
+    if pd.isna(val):
+        return '-'
     # Garante que o valor seja float antes de formatar
     val = float(val)
     return f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # -------------------------------------------------------------
-# Requisitos do Trabalho
+# Requisitos da Professora
 # - Projeto de investimento: 'Compra de imóvel' (exemplo no código)
 # - Simular com/sem aportes (fixos/variáveis)
 # - Diferentes taxas de juros (fixas/variáveis, mensais/anuais)
 # - Períodos em meses e anos (com conversor para dias)
 # - Simulação de Imposto de Renda (incide ou não)
 # - Relatório de análise comparativa
-# - **EXTRA**: Adicionar Valor de Entrada e Amortizações Extraordinárias
-# - **EXTRA**: Adicionar total das parcelas pagas no SAC x Tabela Price
+# - **NOVO**: Adicionar Valor de Entrada e Amortizações Extraordinárias
+# - **NOVO**: Adicionar total das parcelas pagas no SAC x Tabela Price
+# - **NOVO**: Adicionar Análise de Viabilidade (VPL)
 # -------------------------------------------------------------
 
 # -----------------------------
@@ -285,7 +289,8 @@ aba = st.sidebar.radio(
      "Simulação Manual Detalhada",
      "Conversor de Períodos",
      "Conversor de Taxas de Juros",
-     "SAC x Tabela Price"]
+     "SAC x Tabela Price",
+     "Análise de Viabilidade (VPL)"]
 )
 
 st.title("📊 Simulador de Investimentos")
@@ -772,3 +777,77 @@ elif aba == "SAC x Tabela Price":
                 'Saldo Devedor (SAC)': df_sac['Saldo Devedor']
             })
             st.line_chart(df_grafico_saldo)
+            
+# -----------------------------
+# Aba 6 - Análise de Viabilidade (VPL)
+# -----------------------------
+elif aba == "Análise de Viabilidade (VPL)":
+    st.header("Análise de Viabilidade (VPL)")
+    st.markdown("Use esta ferramenta para calcular o Valor Presente Líquido (VPL) e determinar a viabilidade de um projeto de investimento.")
+
+    with st.expander("Configurar Parâmetros do Investimento"):
+        investimento_inicial = st.number_input("Investimento Inicial (R$)", min_value=0.0, step=100.0, value=50000.0, help="O valor do desembolso inicial do projeto.")
+        prazo_avaliacao = st.number_input("Prazo de Avaliação (anos)", min_value=1, step=1, value=5, help="O período de tempo para a análise do projeto.")
+        tma = st.number_input("Taxa Mínima de Atratividade (TMA) (%)", min_value=0.1, step=0.1, value=10.0, help="A taxa de retorno mínima aceitável para o projeto.") / 100
+
+    st.markdown("---")
+    st.subheader("Fluxos de Caixa do Projeto")
+    st.info("Insira o fluxo de caixa esperado para cada ano do projeto.")
+
+    fluxos_caixa_previstos = []
+    colunas_fluxos = st.columns(prazo_avaliacao)
+    for i in range(prazo_avaliacao):
+        fluxo = colunas_fluxos[i].number_input(f"Fluxo de Caixa Ano {i+1} (R$)", value=15000.0, step=100.0, key=f"fluxo_{i+1}")
+        fluxos_caixa_previstos.append(fluxo)
+
+    if st.button("Calcular VPL", key="vpl_btn"):
+        if sum(fluxos_caixa_previstos) == 0:
+            st.error("Por favor, insira valores para os fluxos de caixa para calcular o VPL.")
+        else:
+            # Estrutura de organização conforme a planilha
+            dados = {
+                'Períodos': [f'Ano {i}' for i in range(1, prazo_avaliacao + 1)],
+                'Fluxos de caixa previstos': fluxos_caixa_previstos,
+                'Valor presente dos fluxos de caixa': [0.0] * prazo_avaliacao
+            }
+            df = pd.DataFrame(dados)
+
+            # Cálculo do valor presente de cada fluxo de caixa
+            for i in range(prazo_avaliacao):
+                df.loc[i, 'Valor presente dos fluxos de caixa'] = fluxos_caixa_previstos[i] / ((1 + tma)**(i + 1))
+
+            # Cálculo do somatório dos fluxos de caixa a valor presente
+            somatorio_fluxos_caixa = df['Valor presente dos fluxos de caixa'].sum()
+            vpl = -investimento_inicial + somatorio_fluxos_caixa
+            
+            # Impressão do relatório
+            st.success("✅ **Cálculo do VPL concluído!**")
+            st.subheader("Resumo do Projeto")
+            
+            col_res_vpl1, col_res_vpl2, col_res_vpl3 = st.columns(3)
+            with col_res_vpl1:
+                st.metric(label="Investimento Inicial", value=format_brl(investimento_inicial))
+            with col_res_vpl2:
+                st.metric(label="Prazo de Avaliação", value=f"{prazo_avaliacao} anos")
+            with col_res_vpl3:
+                st.metric(label="TMA", value=f"{tma:.0%}")
+            
+            st.markdown("---")
+            st.subheader("Tabela de Fluxos de Caixa (a Valor Presente)")
+            st.dataframe(df.style.format({
+                'Fluxos de caixa previstos': format_brl,
+                'Valor presente dos fluxos de caixa': format_brl
+            }))
+
+            st.markdown("---")
+            st.subheader("Resultados da Análise")
+            st.metric(label="Somatório dos Fluxos de Caixa", value=format_brl(somatorio_fluxos_caixa))
+            st.metric(label="Valor Presente Líquido (VPL)", value=format_brl(vpl))
+
+            # Avaliação da viabilidade
+            if vpl > 0:
+                st.success(f"**Avaliação: Viável.** Como o VPL ({format_brl(vpl)}) é maior que zero, o investimento irá gerar um retorno superior à Taxa Mínima de Atratividade (TMA), adicionando valor ao projeto.")
+            elif vpl < 0:
+                st.error(f"**Avaliação: Não Viável.** Como o VPL ({format_brl(vpl)}) é menor que zero, o investimento não irá gerar um retorno superior à TMA, não sendo atrativo.")
+            else:
+                st.warning(f"**Avaliação: Indiferente.** Como o VPL ({format_brl(vpl)}) é igual a zero, o investimento irá gerar um retorno exatamente igual à TMA.")
