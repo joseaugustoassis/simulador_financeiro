@@ -16,7 +16,7 @@ def format_brl(val):
     return f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # -------------------------------------------------------------
-# Requisitos do trabalho
+# Requisitos do Trabalho
 # - Projeto de investimento: 'Compra de imóvel' (exemplo no código)
 # - Simular com/sem aportes (fixos/variáveis)
 # - Diferentes taxas de juros (fixas/variáveis, mensais/anuais)
@@ -751,4 +751,3 @@ elif aba == "SAC x Tabela Price":
                 'Saldo Devedor (SAC)': df_sac['Saldo Devedor']
             })
             st.line_chart(df_grafico_saldo)
-
