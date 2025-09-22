@@ -18,16 +18,16 @@ def format_brl(val):
     return f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # -------------------------------------------------------------
-# Requisitos da Professora
+# Requisitos do Trabalho
 # - Projeto de investimento: 'Compra de imóvel' (exemplo no código)
 # - Simular com/sem aportes (fixos/variáveis)
 # - Diferentes taxas de juros (fixas/variáveis, mensais/anuais)
 # - Períodos em meses e anos (com conversor para dias)
 # - Simulação de Imposto de Renda (incide ou não)
 # - Relatório de análise comparativa
-# - **NOVO**: Adicionar Valor de Entrada e Amortizações Extraordinárias
-# - **NOVO**: Adicionar total das parcelas pagas no SAC x Tabela Price
-# - **NOVO**: Adicionar relatório em PDF
+# - **EXTRA**: Adicionar Valor de Entrada e Amortizações Extraordinárias
+# - **EXTRA**: Adicionar total das parcelas pagas no SAC x Tabela Price
+# - **EXTRA**: Adicionar relatório em PDF
 # -------------------------------------------------------------
 
 # -----------------------------
